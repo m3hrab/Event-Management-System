@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Event - DUET Event Management{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold">Edit Event</h2>
+            <p class="text-muted">Update "{{ event.title }}" for {{ event.club.name }}</p>
+        </div>
+        <a href="{{ url_for('events.detail', event_id=event.id) }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Event
+        </a>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body p-4">
+                    <form method="POST">
+                        <!-- Event Title -->
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Event Title *</label>
+                            <input type="text" class="form-control" id="title" name="title" 
+                                   value="{{ event.title }}" required>
+                        </div>
+
+                        <!-- Event Description -->
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Event Description *</label>
+                            <textarea class="form-control" id="description" name="description" rows="5" required>{{ event.description }}</textarea>
+                        </div>
+
+                        <!-- Date and Time -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="date_time" class="form-label">Event Date & Time *</label>
+                                <input type="datetime-local" class="form-control" id="date_time" name="date_time" 
+                                       value="{{ event.date_time.strftime('%Y-%m-%dT%H:%M') }}" required>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="registration_deadline" class="form-label">Registration Deadline *</label>
+                                <input type="datetime-local" class="form-control" id="registration_deadline" 
+                                       name="registration_deadline" 
+                                       value="{{ event.registration_deadline.strftime('%Y-%m-%dT%H:%M') }}" required>
+                            </div>
+                        </div>
+
+                        <!-- Location -->
+                        <div class="mb-3">
+                            <label for="location" class="form-label">Event Location *</label>
+                            <input type="text" class="form-control" id="location" name="location" 
+                                   value="{{ event.location }}" required>
+                        </div>
+
+                        <!-- Maximum Participants -->
+                        <div class="mb-4">
+                            <label for="max_participants" class="form-label">Maximum Participants</label>
+                            <input type="number" class="form-control" id="max_participants" name="max_participants" 
+                                   value="{{ event.max_participants }}" min="{{ event.registration_count }}" max="1000">
+                            <div class="form-text">
+                                Current registrations: {{ event.registration_count }}. 
+                                Cannot be less than current registrations.
+                            </div>
+                        </div>
+
+                        <!-- Warning Notice -->
+                        {% if not current_user.is_admin() %}
+                            <div class="alert alert-warning">
+                                <i class="bi bi-exclamation-triangle"></i>
+                                <strong>Note:</strong> Changes to this event will require admin approval before they become visible to students.
+                            </div>
+                        {% endif %}
+
+                        <!-- Submit Buttons -->
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> Save Changes
+                            </button>
+                            <a href="{{ url_for('events.detail', event_id=event.id) }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Event Info Card -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-info-circle"></i> Event Information</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled small">
+                        <li class="mb-2">
+                            <strong>Club:</strong> {{ event.club.name }} ({{ event.club.acronym }})
+                        </li>
+                        <li class="mb-2">
+                            <strong>Created:</strong> {{ event.created_at.strftime('%b %d, %Y at %I:%M %p') }}
+                        </li>
+                        <li class="mb-2">
+                            <strong>Status:</strong> 
+                            <span class="badge bg-{{ 'success' if event.is_approved else 'warning' }}">
+                                {{ 'Approved' if event.is_approved else 'Pending Approval' }}
+                            </span>
+                        </li>
+                        <li class="mb-2">
+                            <strong>Registrations:</strong> {{ event.registration_count }}/{{ event.max_participants }}
+                        </li>
+                        <li class="mb-2">
+                            <strong>Registration Status:</strong>
+                            <span class="badge bg-{{ 'success' if event.is_registration_open else 'danger' }}">
+                                {{ 'Open' if event.is_registration_open else 'Closed' }}
+                            </span>
+                        </li>
+                    </ul>
+                    
+                    <hr>
+                    
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('events.detail', event_id=event.id) }}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-eye"></i> View Event
+                        </a>
+                        <a href="{{ url_for('events.participants', event_id=event.id) }}" class="btn btn-outline-info btn-sm">
+                            <i class="bi bi-people"></i> View Participants
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Guidelines Card -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-lightbulb"></i> Edit Guidelines</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled small">
+                        <li class="mb-2">
+                            <i class="bi bi-check text-success"></i>
+                            Keep existing registrations in mind
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-check text-success"></i>
+                            Major changes may require re-approval
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-check text-success"></i>
+                            Notify registered participants of changes
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-check text-success"></i>
+                            Cannot reduce capacity below current registrations
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Form validation
+document.querySelector('form').addEventListener('submit', function(e) {
+    const eventDate = new Date(document.getElementById('date_time').value);
+    const regDeadline = new Date(document.getElementById('registration_deadline').value);
+    
+    if (regDeadline >= eventDate) {
+        e.preventDefault();
+        alert('Registration deadline must be before the event date.');
+        return;
+    }
+    
+    const maxParticipants = parseInt(document.getElementById('max_participants').value);
+    const currentRegistrations = {{ event.registration_count }};
+    
+    if (maxParticipants < currentRegistrations) {
+        e.preventDefault();
+        alert(`Maximum participants cannot be less than current registrations (${currentRegistrations}).`);
+        return;
+    }
+});
+</script>
+{% endblock %} 

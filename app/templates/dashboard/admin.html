@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - DUET Event Management{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold">Admin Dashboard</h2>
+            <p class="text-muted">Welcome back, {{ current_user.full_name }}</p>
+        </div>
+        <div>
+            <a href="{{ url_for('clubs.create') }}" class="btn btn-primary me-2">
+                <i class="bi bi-plus-circle"></i> Create Club
+            </a>
+            <a href="{{ url_for('dashboard.manage_users') }}" class="btn btn-outline-primary">
+                <i class="bi bi-people"></i> Manage Users
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="mb-0">{{ total_users }}</h3>
+                            <small>Total Users</small>
+                        </div>
+                        <i class="bi bi-people display-6"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="mb-0">{{ total_clubs }}</h3>
+                            <small>Active Clubs</small>
+                        </div>
+                        <i class="bi bi-building display-6"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="mb-0">{{ total_events }}</h3>
+                            <small>Total Events</small>
+                        </div>
+                        <i class="bi bi-calendar-event display-6"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="mb-0">{{ pending_events }}</h3>
+                            <small>Pending Approval</small>
+                        </div>
+                        <i class="bi bi-clock-history display-6"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Pending Events -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Events Pending Approval</h5>
+                    <a href="{{ url_for('dashboard.manage_events') }}" class="btn btn-sm btn-outline-primary">
+                        View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if pending_events_list %}
+                        <div id="pending-events-list">
+                            {% for event in pending_events_list %}
+                                <div id="event-{{ event.id }}" class="d-flex justify-content-between align-items-start mb-3 pb-3 {% if not loop.last %}border-bottom{% endif %}">
+                                    <div>
+                                        <h6 class="mb-1">{{ event.title }}</h6>
+                                        <small class="text-muted">
+                                            <i class="bi bi-building"></i> {{ event.club.acronym }} | 
+                                            <i class="bi bi-calendar"></i> {{ event.date_time.strftime('%b %d, %Y') }} |
+                                            <i class="bi bi-clock"></i> {{ event.created_at.strftime('%m/%d %I:%M %p') }}
+                                        </small>
+                                    </div>
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-success btn-sm" 
+                                                hx-post="{{ url_for('events.approve', event_id=event.id) }}"
+                                                hx-target="#event-{{ event.id }}"
+                                                hx-swap="outerHTML"
+                                                hx-indicator="#approve-loading-{{ event.id }}">
+                                            <i class="bi bi-check"></i>
+                                            <span id="approve-loading-{{ event.id }}" class="htmx-indicator spinner-border spinner-border-sm ms-1"></span>
+                                        </button>
+                                        <button class="btn btn-danger btn-sm" 
+                                                hx-post="{{ url_for('events.reject', event_id=event.id) }}"
+                                                hx-target="#event-{{ event.id }}"
+                                                hx-swap="outerHTML"
+                                                hx-confirm="Are you sure you want to reject this event?"
+                                                hx-indicator="#reject-loading-{{ event.id }}">
+                                            <i class="bi bi-x"></i>
+                                            <span id="reject-loading-{{ event.id }}" class="htmx-indicator spinner-border spinner-border-sm ms-1"></span>
+                                        </button>
+                                        <a href="{{ url_for('events.detail', event_id=event.id) }}" class="btn btn-outline-primary btn-sm">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-3">
+                            <i class="bi bi-check-circle display-6 text-success"></i>
+                            <p class="text-muted mt-2">No events pending approval</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Users -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Recent Users</h5>
+                    <a href="{{ url_for('dashboard.manage_users') }}" class="btn btn-sm btn-outline-primary">
+                        View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if recent_users %}
+                        {% for user in recent_users %}
+                            <div class="d-flex justify-content-between align-items-center mb-3 pb-3 {% if not loop.last %}border-bottom{% endif %}">
+                                <div>
+                                    <h6 class="mb-1">{{ user.full_name }}</h6>
+                                    <small class="text-muted">
+                                        <i class="bi bi-envelope"></i> {{ user.email }} | 
+                                        <span class="badge bg-{{ 'danger' if user.role == 'admin' else 'warning' if user.role == 'club_manager' else 'secondary' }}">
+                                            {{ user.role.title().replace('_', ' ') }}
+                                        </span>
+                                    </small>
+                                </div>
+                                <small class="text-muted">
+                                    {{ user.created_at.strftime('%m/%d/%y') }}
+                                </small>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-3">
+                            <i class="bi bi-people display-6 text-muted"></i>
+                            <p class="text-muted mt-2">No recent users</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('clubs.create') }}" class="btn btn-outline-primary btn-lg w-100">
+                                <i class="bi bi-plus-circle d-block mb-2"></i>
+                                Create Club
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('dashboard.manage_users') }}" class="btn btn-outline-info btn-lg w-100">
+                                <i class="bi bi-people d-block mb-2"></i>
+                                Manage Users
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('dashboard.manage_events') }}" class="btn btn-outline-warning btn-lg w-100">
+                                <i class="bi bi-calendar-check d-block mb-2"></i>
+                                Manage Events
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('clubs.index') }}" class="btn btn-outline-success btn-lg w-100">
+                                <i class="bi bi-building d-block mb-2"></i>
+                                View Clubs
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function approveEvent(eventId) {
+    if (confirm('Are you sure you want to approve this event?')) {
+        fetch(`/events/${eventId}/approve`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Failed to approve event: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error: ' + error);
+        });
+    }
+}
+
+function rejectEvent(eventId) {
+    if (confirm('Are you sure you want to reject this event? This will delete it permanently.')) {
+        fetch(`/events/${eventId}/reject`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Failed to reject event: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error: ' + error);
+        });
+    }
+}
+</script>
+{% endblock %} 

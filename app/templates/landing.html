@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+
+{% block title %}Welcome to DUET Event Management{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h1 class="display-4 fw-bold mb-4">Discover Amazing Events at DUET</h1>
+                <p class="lead mb-4">
+                    Join exciting events organized by various clubs at Dhaka University of Engineering & Technology. 
+                    Connect with fellow students, learn new skills, and be part of our vibrant community.
+                </p>
+                {% if not current_user.is_authenticated %}
+                    <div class="d-flex gap-3">
+                        <a href="{{ url_for('auth.signup') }}" class="btn btn-light btn-lg">
+                            <i class="bi bi-person-plus"></i> Join Now
+                        </a>
+                        <a href="{{ url_for('main.events') }}" class="btn btn-outline-light btn-lg">
+                            <i class="bi bi-calendar-event"></i> Browse Events
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="d-flex gap-3">
+                        <a href="{{ url_for('dashboard.index') }}" class="btn btn-light btn-lg">
+                            <i class="bi bi-speedometer2"></i> Go to Dashboard
+                        </a>
+                        <a href="{{ url_for('main.events') }}" class="btn btn-outline-light btn-lg">
+                            <i class="bi bi-calendar-event"></i> Browse Events
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+            <div class="col-lg-6">
+                <div class="text-center">
+                    <i class="bi bi-calendar-heart display-1"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Search and Filter Section -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <form method="GET" action="{{ url_for('main.index') }}">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <input type="text" class="form-control" name="search" placeholder="Search events..." value="{{ search }}">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <select class="form-select" name="club">
+                        <option value="">All Clubs</option>
+                        {% for club in clubs %}
+                            <option value="{{ club.id }}" {% if club_filter == club.id|string %}selected{% endif %}>
+                                {{ club.acronym }} - {{ club.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search"></i> Search
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</section>
+
+<!-- Featured Events Section -->
+<section class="py-5">
+    <div class="container">
+        <div class="row mb-4">
+            <div class="col-lg-8">
+                <h2 class="fw-bold">Upcoming Events</h2>
+                <p class="text-muted">Don't miss out on these exciting upcoming events from DUET clubs</p>
+            </div>
+            <div class="col-lg-4 text-lg-end">
+                <a href="{{ url_for('main.events') }}" class="btn btn-outline-primary">
+                    View All Events <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+
+        {% if events %}
+            <div class="row">
+                {% for event in events %}
+                    <div class="col-lg-4 col-md-6 mb-4">
+                        <div class="card h-100 card-hover event-card">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <span class="badge bg-primary">{{ event.club.acronym }}</span>
+                                    <small class="text-muted">
+                                        {{ event.date_time.strftime('%b %d, %Y') }}
+                                    </small>
+                                </div>
+                                <h5 class="card-title">{{ event.title }}</h5>
+                                <p class="card-text text-muted">
+                                    {{ event.description[:100] }}{% if event.description|length > 100 %}...{% endif %}
+                                </p>
+                                <div class="mb-3">
+                                    <small class="text-muted">
+                                        <i class="bi bi-geo-alt"></i> {{ event.location }}<br>
+                                        <i class="bi bi-clock"></i> {{ event.date_time.strftime('%I:%M %p') }}<br>
+                                        <i class="bi bi-people"></i> {{ event.registration_count }}/{{ event.max_participants }} registered
+                                    </small>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <a href="{{ url_for('events.detail', event_id=event.id) }}" class="btn btn-outline-primary">
+                                        View Details
+                                    </a>
+                                    {% if event.is_registration_open %}
+                                        <span class="badge bg-success">Registration Open</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Registration Closed</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-calendar-x display-4 text-muted"></i>
+                <h4 class="mt-3">No upcoming events found</h4>
+                <p class="text-muted">
+                    {% if search or club_filter %}
+                        Try adjusting your search criteria or <a href="{{ url_for('main.index') }}">view all events</a>.
+                    {% else %}
+                        Check back later for new events from our clubs.
+                    {% endif %}
+                </p>
+            </div>
+        {% endif %}
+    </div>
+</section>
+
+<!-- Featured Clubs Section -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="fw-bold">Our Clubs</h2>
+            <p class="text-muted">Discover the diverse range of clubs at DUET</p>
+        </div>
+
+        <div class="row">
+            {% for club in featured_clubs %}
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="card club-card h-100">
+                        <div class="card-body text-center">
+                            <div class="mb-3">
+                                <i class="bi bi-people-fill display-4 text-primary"></i>
+                            </div>
+                            <h5 class="card-title">{{ club.acronym }}</h5>
+                            <h6 class="card-subtitle mb-2 text-muted">{{ club.name }}</h6>
+                            <p class="card-text">
+                                {{ club.description[:120] }}{% if club.description and club.description|length > 120 %}...{% endif %}
+                            </p>
+                            <a href="{{ url_for('clubs.detail', club_id=club.id) }}" class="btn btn-primary">
+                                Learn More
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <div class="text-center mt-4">
+            <a href="{{ url_for('clubs.index') }}" class="btn btn-outline-primary btn-lg">
+                View All Clubs <i class="bi bi-arrow-right"></i>
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- Call to Action Section -->
+{% if not current_user.is_authenticated %}
+<section class="py-5 bg-primary text-white">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h3 class="fw-bold">Ready to Join the DUET Community?</h3>
+                <p class="mb-0">Sign up today to register for events and connect with clubs that match your interests.</p>
+            </div>
+            <div class="col-lg-4 text-lg-end">
+                <a href="{{ url_for('auth.signup') }}" class="btn btn-light btn-lg">
+                    <i class="bi bi-person-plus"></i> Sign Up Now
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endif %}
+{% endblock %} 

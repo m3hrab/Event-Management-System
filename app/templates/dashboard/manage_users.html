@@ -1,0 +1,274 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Users - DUET Event Management{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold">Manage Users</h2>
+            <p class="text-muted">View and manage user accounts and roles</p>
+        </div>
+        <a href="{{ url_for('dashboard.admin') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+
+    <!-- Search and Filter -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="search" class="form-label">Search Users</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <input type="text" class="form-control" id="search" name="search" 
+                                   placeholder="Name, username, or email..." value="{{ search }}">
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <label for="role" class="form-label">Filter by Role</label>
+                        <select class="form-select" id="role" name="role">
+                            <option value="">All Roles</option>
+                            <option value="admin" {% if role_filter == 'admin' %}selected{% endif %}>Admin</option>
+                            <option value="club_manager" {% if role_filter == 'club_manager' %}selected{% endif %}>Club Manager</option>
+                            <option value="student" {% if role_filter == 'student' %}selected{% endif %}>Student</option>
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-2">
+                        <label class="form-label">&nbsp;</label>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-funnel"></i> Filter
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Results Info -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <p class="text-muted mb-0">
+            Showing {{ users|length }} user{{ 's' if users|length != 1 else '' }}
+            {% if search or role_filter %}
+                {% if search %} matching "{{ search }}"{% endif %}
+                {% if role_filter %} with role "{{ role_filter.title().replace('_', ' ') }}"{% endif %}
+            {% endif %}
+        </p>
+        {% if search or role_filter %}
+            <a href="{{ url_for('dashboard.manage_users') }}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-x"></i> Clear Filters
+            </a>
+        {% endif %}
+    </div>
+
+    <!-- Users Table -->
+    <div class="card">
+        <div class="card-body p-0">
+            {% if users %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>User</th>
+                                <th>Role</th>
+                                <th>Club</th>
+                                <th>Joined</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in users %}
+                                <tr>
+                                    <td>
+                                        <div>
+                                            <h6 class="mb-1">{{ user.full_name }}</h6>
+                                            <small class="text-muted">
+                                                <i class="bi bi-person"></i> {{ user.username }} | 
+                                                <i class="bi bi-envelope"></i> {{ user.email }}
+                                            </small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ 'danger' if user.role == 'admin' else 'warning' if user.role == 'club_manager' else 'secondary' }}">
+                                            {{ user.role.title().replace('_', ' ') }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if user.club %}
+                                            <small>{{ user.club.acronym }}</small>
+                                        {% else %}
+                                            <small class="text-muted">-</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ user.created_at.strftime('%b %d, %Y') }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if user.is_active else 'danger' }}">
+                                            {{ 'Active' if user.is_active else 'Inactive' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if user.id != current_user.id %}
+                                            <div class="btn-group btn-group-sm">
+                                                <button class="btn btn-outline-primary" onclick="editUser({{ user.id }}, '{{ user.role }}', {{ user.club_id or 'null' }})">
+                                                    <i class="bi bi-pencil"></i>
+                                                </button>
+                                                <button class="btn btn-outline-{{ 'danger' if user.is_active else 'success' }}" 
+                                                        onclick="toggleUserStatus({{ user.id }}, {{ user.is_active|lower }})">
+                                                    <i class="bi bi-{{ 'ban' if user.is_active else 'check-circle' }}"></i>
+                                                </button>
+                                            </div>
+                                        {% else %}
+                                            <small class="text-muted">Current User</small>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-people display-4 text-muted"></i>
+                    <h4 class="mt-3">No users found</h4>
+                    <p class="text-muted">
+                        {% if search or role_filter %}
+                            Try adjusting your search criteria or <a href="{{ url_for('dashboard.manage_users') }}">view all users</a>.
+                        {% else %}
+                            No users in the system yet.
+                        {% endif %}
+                    </p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Edit User Modal -->
+<div class="modal fade" id="editUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit User Role</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editUserForm">
+                <div class="modal-body">
+                    <input type="hidden" id="edit_user_id">
+                    
+                    <div class="mb-3">
+                        <label for="edit_role" class="form-label">Role</label>
+                        <select class="form-select" id="edit_role" required>
+                            <option value="student">Student</option>
+                            <option value="club_manager">Club Manager</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3" id="club_selection" style="display: none;">
+                        <label for="edit_club" class="form-label">Assign to Club</label>
+                        <select class="form-select" id="edit_club">
+                            <option value="">Select Club</option>
+                            {% for club in clubs %}
+                                <option value="{{ club.id }}">{{ club.acronym }} - {{ club.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">Required for club manager role</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Role</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function editUser(userId, currentRole, currentClubId) {
+    document.getElementById('edit_user_id').value = userId;
+    document.getElementById('edit_role').value = currentRole;
+    
+    if (currentClubId) {
+        document.getElementById('edit_club').value = currentClubId;
+    } else {
+        document.getElementById('edit_club').value = '';
+    }
+    
+    toggleClubSelection();
+    
+    const modal = new bootstrap.Modal(document.getElementById('editUserModal'));
+    modal.show();
+}
+
+function toggleClubSelection() {
+    const role = document.getElementById('edit_role').value;
+    const clubSelection = document.getElementById('club_selection');
+    
+    if (role === 'club_manager') {
+        clubSelection.style.display = 'block';
+        document.getElementById('edit_club').required = true;
+    } else {
+        clubSelection.style.display = 'none';
+        document.getElementById('edit_club').required = false;
+    }
+}
+
+function toggleUserStatus(userId, isActive) {
+    const action = isActive ? 'deactivate' : 'activate';
+    if (confirm(`Are you sure you want to ${action} this user?`)) {
+        // Implementation would go here for user status toggle
+        alert('User status toggle functionality not implemented in this demo');
+    }
+}
+
+// Event listeners
+document.getElementById('edit_role').addEventListener('change', toggleClubSelection);
+
+document.getElementById('editUserForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const userId = document.getElementById('edit_user_id').value;
+    const role = document.getElementById('edit_role').value;
+    const clubId = document.getElementById('edit_club').value;
+    
+    const data = {
+        user_id: parseInt(userId),
+        role: role
+    };
+    
+    if (role === 'club_manager' && clubId) {
+        data.club_id = parseInt(clubId);
+    }
+    
+    fetch('{{ url_for("dashboard.update_user_role") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Error updating user role: ' + error);
+    });
+});
+</script>
+{% endblock %} 

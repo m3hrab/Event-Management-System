@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Clubs - DUET Event Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold text-primary">
+                <i class="fas fa-users-cog me-2"></i>Manage Clubs
+            </h2>
+            <p class="text-muted">Manage all clubs in the system</p>
+        </div>
+        <div>
+            <a href="{{ url_for('clubs.create') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-1"></i>Create New Club
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-primary">
+                <div class="card-body text-center">
+                    <i class="fas fa-building fa-2x text-primary mb-2"></i>
+                    <h4 class="text-primary">{{ stats.total_clubs }}</h4>
+                    <p class="text-muted mb-0">Total Clubs</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-success">
+                <div class="card-body text-center">
+                    <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+                    <h4 class="text-success">{{ stats.active_clubs }}</h4>
+                    <p class="text-muted mb-0">Active Clubs</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-info">
+                <div class="card-body text-center">
+                    <i class="fas fa-user-tie fa-2x text-info mb-2"></i>
+                    <h4 class="text-info">{{ stats.clubs_with_managers }}</h4>
+                    <p class="text-muted mb-0">With Managers</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-warning">
+                <div class="card-body text-center">
+                    <i class="fas fa-user-slash fa-2x text-warning mb-2"></i>
+                    <h4 class="text-warning">{{ stats.clubs_without_managers }}</h4>
+                    <p class="text-muted mb-0">Need Managers</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters and Search -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3" hx-get="{{ url_for('dashboard.manage_clubs') }}" hx-target="#clubs-table" hx-indicator="#loading">
+                <div class="col-md-4">
+                    <label for="search" class="form-label">Search Clubs</label>
+                    <input type="text" class="form-control" id="search" name="search" 
+                           value="{{ search }}" placeholder="Search by name or acronym..."
+                           hx-get="{{ url_for('dashboard.manage_clubs') }}" 
+                           hx-target="#clubs-table" 
+                           hx-trigger="keyup changed delay:500ms">
+                </div>
+                <div class="col-md-3">
+                    <label for="status" class="form-label">Status</label>
+                    <select class="form-select" id="status" name="status"
+                            hx-get="{{ url_for('dashboard.manage_clubs') }}" 
+                            hx-target="#clubs-table" 
+                            hx-trigger="change">
+                        <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All</option>
+                        <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+                        <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="fas fa-search me-1"></i>Search
+                    </button>
+                    <a href="{{ url_for('dashboard.manage_clubs') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times me-1"></i>Clear
+                    </a>
+                </div>
+                <div class="col-md-2 d-flex align-items-end justify-content-end">
+                    <div id="loading" class="htmx-indicator">
+                        <div class="spinner-border spinner-border-sm text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Clubs Table -->
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+                <i class="fas fa-list me-2"></i>Clubs List
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            <div id="clubs-table">
+                {% include 'dashboard/partials/clubs_table.html' %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Club Actions Modal -->
+<div class="modal fade" id="clubActionsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Club Actions</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="modal-content">
+                    <!-- Content loaded via HTMX -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// HTMX event listeners for club management
+document.body.addEventListener('htmx:afterRequest', function(evt) {
+    if (evt.detail.xhr.status === 200 && evt.detail.target.id === 'clubs-table') {
+        // Refresh statistics after table updates
+        setTimeout(() => {
+            window.location.reload();
+        }, 1000);
+    }
+});
+
+// Club action functions
+function toggleClubStatus(clubId, currentStatus) {
+    const action = currentStatus ? 'deactivate' : 'activate';
+    if (confirm(`Are you sure you want to ${action} this club?`)) {
+        fetch(`/dashboard/club-actions/${clubId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                action: 'toggle_status'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success message
+                showAlert(data.message, 'success');
+                // Refresh the table
+                htmx.trigger('#clubs-table', 'refreshTable');
+            } else {
+                showAlert(data.error, 'error');
+            }
+        })
+        .catch(error => {
+            showAlert('Action failed', 'error');
+        });
+    }
+}
+
+function removeManager(clubId) {
+    if (confirm('Are you sure you want to remove the club manager?')) {
+        fetch(`/dashboard/club-actions/${clubId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                action: 'remove_manager'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert(data.message, 'success');
+                htmx.trigger('#clubs-table', 'refreshTable');
+            } else {
+                showAlert(data.error, 'error');
+            }
+        })
+        .catch(error => {
+            showAlert('Action failed', 'error');
+        });
+    }
+}
+
+function showAlert(message, type) {
+    const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+    const alertHtml = `
+        <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    // Insert alert at the top of the container
+    const container = document.querySelector('.container-fluid');
+    container.insertAdjacentHTML('afterbegin', alertHtml);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        const alert = document.querySelector('.alert');
+        if (alert) {
+            alert.remove();
+        }
+    }, 5000);
+}
+</script>
+{% endblock %} 

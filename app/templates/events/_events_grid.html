@@ -1,0 +1,114 @@
+<!-- Results Info -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <p class="text-muted mb-0">
+        Found {{ events|length }} event{{ 's' if events|length != 1 else '' }}
+        {% if search or club_filter or status_filter != 'upcoming' %}
+            {% if search %} for "{{ search }}"{% endif %}
+            {% if club_filter %} from {{ clubs|selectattr('id', 'equalto', club_filter|int)|first|attr('acronym') }}{% endif %}
+            {% if status_filter == 'past' %} (past events){% elif status_filter == 'all' %} (all events){% endif %}
+        {% endif %}
+    </p>
+    {% if search or club_filter or status_filter != 'upcoming' %}
+        <a href="{{ url_for('main.events') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-x"></i> Clear Filters
+        </a>
+    {% endif %}
+</div>
+
+<!-- Events Grid -->
+{% if events %}
+    <div class="row">
+        {% for event in events %}
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card h-100 card-hover event-card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="badge bg-primary">{{ event.club.acronym }}</span>
+                            <small class="text-muted">
+                                {{ event.date_time.strftime('%b %d, %Y') }}
+                            </small>
+                        </div>
+                        
+                        <h5 class="card-title">{{ event.title }}</h5>
+                        <p class="card-text text-muted">
+                            {{ event.description[:100] }}{% if event.description|length > 100 %}...{% endif %}
+                        </p>
+                        
+                        <div class="mb-3">
+                            <small class="text-muted">
+                                <i class="bi bi-geo-alt"></i> {{ event.location }}<br>
+                                <i class="bi bi-clock"></i> {{ event.date_time.strftime('%I:%M %p') }}<br>
+                                <i class="bi bi-people"></i> {{ event.registration_count }}/{{ event.max_participants }} registered
+                            </small>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between align-items-center">
+                            <a href="{{ url_for('events.detail', event_id=event.id) }}" class="btn btn-outline-primary">
+                                View Details
+                            </a>
+                            
+                            <!-- Status Badge -->
+                            {% if not event.is_upcoming %}
+                                <span class="badge bg-secondary">Past Event</span>
+                            {% elif event.is_registration_open and event.seats_available > 0 %}
+                                {% if current_user.is_authenticated %}
+                                    {% if event.is_user_registered(current_user.id) %}
+                                        <span class="badge bg-success">Registered</span>
+                                    {% else %}
+                                        <span class="badge bg-info">Open</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="badge bg-info">Open</span>
+                                {% endif %}
+                            {% elif event.seats_available <= 0 %}
+                                <span class="badge bg-danger">Full</span>
+                            {% else %}
+                                <span class="badge bg-warning">Closed</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <!-- No Events Found -->
+    <div class="text-center py-5">
+        <i class="bi bi-calendar-x display-4 text-muted"></i>
+        <h4 class="mt-3">No events found</h4>
+        <p class="text-muted">
+            {% if search or club_filter or status_filter != 'upcoming' %}
+                Try adjusting your search criteria or <a href="{{ url_for('main.events') }}">view all upcoming events</a>.
+            {% else %}
+                Check back later for new events from our clubs.
+            {% endif %}
+        </p>
+        {% if not current_user.is_authenticated %}
+            <div class="mt-4">
+                <a href="{{ url_for('auth.signup') }}" class="btn btn-primary">
+                    <i class="bi bi-person-plus"></i> Join to Get Notified
+                </a>
+            </div>
+        {% endif %}
+    </div>
+{% endif %}
+
+<!-- Call to Action for Non-logged in Users -->
+{% if events and not current_user.is_authenticated %}
+    <div class="mt-5">
+        <div class="card bg-light">
+            <div class="card-body text-center">
+                <h5>Ready to Join These Events?</h5>
+                <p class="text-muted">Create an account to register for events and connect with DUET clubs.</p>
+                <div class="d-flex gap-2 justify-content-center">
+                    <a href="{{ url_for('auth.signup') }}" class="btn btn-primary">
+                        <i class="bi bi-person-plus"></i> Sign Up
+                    </a>
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-outline-primary">
+                        <i class="bi bi-box-arrow-in-right"></i> Login
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endif %} 

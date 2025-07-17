@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}Edit {{ club.name }} - DUET Event Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h4 class="mb-0">
+                        <i class="fas fa-edit me-2"></i>Edit Club: {{ club.name }}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">
+                                <i class="fas fa-users me-1"></i>Club Name <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="name" 
+                                   name="name" 
+                                   value="{{ club.name }}"
+                                   required
+                                   placeholder="Enter club name"
+                                   maxlength="100">
+                            <div class="form-text">Enter the full name of the club</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="acronym" class="form-label">
+                                <i class="fas fa-tag me-1"></i>Club Acronym <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="acronym" 
+                                   name="acronym" 
+                                   value="{{ club.acronym }}"
+                                   required
+                                   placeholder="Enter club acronym"
+                                   maxlength="20"
+                                   style="text-transform: uppercase;">
+                            <div class="form-text">Short acronym for the club (will be displayed in uppercase)</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">
+                                <i class="fas fa-align-left me-1"></i>Description
+                            </label>
+                            <textarea class="form-control" 
+                                      id="description" 
+                                      name="description" 
+                                      rows="4"
+                                      placeholder="Enter club description, mission, and objectives..."
+                                      maxlength="1000">{{ club.description or '' }}</textarea>
+                            <div class="form-text">Brief description of the club's purpose and activities</div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('clubs.detail', club_id=club.id) }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-1"></i>Back to Club
+                            </a>
+                            <div>
+                                <button type="submit" class="btn btn-warning">
+                                    <i class="fas fa-save me-1"></i>Update Club
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Club Info -->
+            <div class="card mt-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Club Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Created:</strong> {{ club.created_at.strftime('%B %d, %Y') }}</p>
+                            <p><strong>Total Events:</strong> {{ club.events.count() }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Manager:</strong> 
+                                {% set manager = club.get_manager() %}
+                                {% if manager %}
+                                    {{ manager.full_name }}
+                                {% else %}
+                                    <span class="text-muted">No manager assigned</span>
+                                {% endif %}
+                            </p>
+                            <p><strong>Active Events:</strong> {{ club.events.filter_by(is_active=True).count() }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-uppercase acronym field
+    const acronymField = document.getElementById('acronym');
+    acronymField.addEventListener('input', function(e) {
+        e.target.value = e.target.value.toUpperCase();
+    });
+    
+    // Form validation
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        const name = document.getElementById('name').value.trim();
+        const acronym = document.getElementById('acronym').value.trim();
+        
+        if (!name || !acronym) {
+            e.preventDefault();
+            alert('Please fill in all required fields.');
+            return;
+        }
+        
+        if (acronym.length < 2) {
+            e.preventDefault();
+            alert('Acronym must be at least 2 characters long.');
+            return;
+        }
+    });
+});
+</script>
+{% endblock %} 

@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+
+{% block title %}Participants - {{ event.title }} - DUET Event Management{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold">Event Participants</h2>
+            <p class="text-muted">{{ event.title }} - {{ event.club.acronym }}</p>
+        </div>
+        <a href="{{ url_for('events.detail', event_id=event.id) }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Event
+        </a>
+    </div>
+
+    <!-- Event Summary -->
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6><i class="bi bi-calendar-event"></i> Event Details</h6>
+                            <p class="text-muted mb-1">{{ event.title }}</p>
+                            <small class="text-muted">
+                                {{ event.date_time.strftime('%A, %B %d, %Y at %I:%M %p') }}<br>
+                                {{ event.location }}
+                            </small>
+                        </div>
+                        <div class="col-md-6">
+                            <h6><i class="bi bi-people"></i> Registration Status</h6>
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="progress flex-grow-1 me-3" style="height: 20px;">
+                                    <div class="progress-bar" role="progressbar" 
+                                         style="width: {{ (participants|length / event.max_participants * 100)|int }}%">
+                                        {{ participants|length }}/{{ event.max_participants }}
+                                    </div>
+                                </div>
+                                <span class="badge bg-{{ 'success' if event.seats_available > 0 else 'danger' }}">
+                                    {{ event.seats_available }} seats left
+                                </span>
+                            </div>
+                            <small class="text-muted">
+                                Registration {{ 'open' if event.is_registration_open else 'closed' }}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title">Quick Actions</h6>
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-primary" onclick="exportParticipants()">
+                            <i class="bi bi-download"></i> Export List
+                        </button>
+                        <a href="{{ url_for('events.edit', event_id=event.id) }}" class="btn btn-outline-primary">
+                            <i class="bi bi-pencil"></i> Edit Event
+                        </a>
+                        <button class="btn btn-outline-info" onclick="sendNotification()">
+                            <i class="bi bi-envelope"></i> Notify Participants
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Participants List -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Registered Participants ({{ participants|length }})</h5>
+            <div class="input-group" style="width: 300px;">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input type="text" class="form-control" id="searchInput" placeholder="Search participants...">
+            </div>
+        </div>
+        <div class="card-body p-0">
+            {% if participants %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0" id="participantsTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Username</th>
+                                <th>Registered</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for participant in participants %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="me-2">
+                                                <i class="bi bi-person-circle text-primary"></i>
+                                            </div>
+                                            <div>
+                                                <h6 class="mb-0">{{ participant.full_name }}</h6>
+                                                <span class="badge bg-{{ 'danger' if participant.role == 'admin' else 'warning' if participant.role == 'club_manager' else 'secondary' }}">
+                                                    {{ participant.role.title().replace('_', ' ') }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <a href="mailto:{{ participant.email }}" class="text-decoration-none">
+                                            {{ participant.email }}
+                                        </a>
+                                    </td>
+                                    <td>{{ participant.username }}</td>
+                                    <td>
+                                        {% set registration = participant.registrations.filter_by(event_id=event.id).first() %}
+                                        {% if registration %}
+                                            <small class="text-muted">
+                                                {{ registration.registered_at.strftime('%b %d, %Y') }}<br>
+                                                {{ registration.registered_at.strftime('%I:%M %p') }}
+                                            </small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <button class="btn btn-outline-primary" onclick="viewProfile({{ participant.id }})">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                            <button class="btn btn-outline-info" onclick="sendMessage({{ participant.id }})">
+                                                <i class="bi bi-envelope"></i>
+                                            </button>
+                                            {% if current_user.is_admin() %}
+                                                <button class="btn btn-outline-danger" onclick="removeParticipant({{ participant.id }})">
+                                                    <i class="bi bi-person-x"></i>
+                                                </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-people display-4 text-muted"></i>
+                    <h4 class="mt-3">No participants yet</h4>
+                    <p class="text-muted">
+                        {% if event.is_registration_open %}
+                            Registration is open. Participants will appear here as they register.
+                        {% else %}
+                            Registration has ended for this event.
+                        {% endif %}
+                    </p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Statistics -->
+    {% if participants %}
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">Registration Timeline</h6>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="registrationChart" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">Participant Roles</h6>
+                    </div>
+                    <div class="card-body">
+                        {% set role_counts = {} %}
+                        {% for participant in participants %}
+                            {% set _ = role_counts.update({participant.role: role_counts.get(participant.role, 0) + 1}) %}
+                        {% endfor %}
+                        
+                        {% for role, count in role_counts.items() %}
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="text-muted">{{ role.title().replace('_', ' ') }}</span>
+                                <div class="d-flex align-items-center">
+                                    <div class="progress me-2" style="width: 100px; height: 10px;">
+                                        <div class="progress-bar" style="width: {{ (count / participants|length * 100)|int }}%"></div>
+                                    </div>
+                                    <strong>{{ count }}</strong>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+// Search functionality
+document.getElementById('searchInput').addEventListener('keyup', function() {
+    const searchTerm = this.value.toLowerCase();
+    const rows = document.querySelectorAll('#participantsTable tbody tr');
+    
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchTerm) ? '' : 'none';
+    });
+});
+
+// Export functionality
+function exportParticipants() {
+    const participants = [
+        ['#', 'Name', 'Email', 'Username', 'Role', 'Registered']
+    ];
+    
+    const rows = document.querySelectorAll('#participantsTable tbody tr');
+    rows.forEach((row, index) => {
+        const cells = row.querySelectorAll('td');
+        participants.push([
+            index + 1,
+            cells[1].querySelector('h6').textContent,
+            cells[2].textContent.trim(),
+            cells[3].textContent.trim(),
+            cells[1].querySelector('.badge').textContent.trim(),
+            cells[4].textContent.trim()
+        ]);
+    });
+    
+    const csvContent = participants.map(row => row.join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = '{{ event.title|replace(" ", "_") }}_participants.csv';
+    a.click();
+    
+    window.URL.revokeObjectURL(url);
+}
+
+// Placeholder functions for future features
+function viewProfile(userId) {
+    alert('Profile view feature will be implemented in future updates.');
+}
+
+function sendMessage(userId) {
+    alert('Messaging feature will be implemented in future updates.');
+}
+
+function sendNotification() {
+    alert('Notification feature will be implemented in future updates.');
+}
+
+function removeParticipant(userId) {
+    if (confirm('Are you sure you want to remove this participant?')) {
+        alert('Participant removal feature will be implemented in future updates.');
+    }
+}
+</script>
+{% endblock %} 

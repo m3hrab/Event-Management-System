@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block title %}Create Event - DUET Event Management{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold">Create New Event</h2>
+            <p class="text-muted">Create an event for {{ club.name }} ({{ club.acronym }})</p>
+        </div>
+        <a href="{{ url_for('dashboard.club_manager') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body p-4">
+                    <form method="POST">
+                        <!-- Event Title -->
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Event Title *</label>
+                            <input type="text" class="form-control" id="title" name="title" required
+                                   placeholder="Enter a compelling event title">
+                            <div class="form-text">Choose a clear and engaging title for your event</div>
+                        </div>
+
+                        <!-- Event Description -->
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Event Description *</label>
+                            <textarea class="form-control" id="description" name="description" rows="5" required
+                                      placeholder="Describe your event in detail..."></textarea>
+                            <div class="form-text">Include event details, agenda, what participants will learn, etc.</div>
+                        </div>
+
+                        <!-- Date and Time -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="date_time" class="form-label">Event Date & Time *</label>
+                                <input type="datetime-local" class="form-control" id="date_time" name="date_time" required>
+                                <div class="form-text">When will the event take place?</div>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="registration_deadline" class="form-label">Registration Deadline *</label>
+                                <input type="datetime-local" class="form-control" id="registration_deadline" name="registration_deadline" required>
+                                <div class="form-text">Last date/time for registration</div>
+                            </div>
+                        </div>
+
+                        <!-- Location -->
+                        <div class="mb-3">
+                            <label for="location" class="form-label">Event Location *</label>
+                            <input type="text" class="form-control" id="location" name="location" required
+                                   placeholder="e.g., DUET Auditorium, Room 301, Online (Zoom)">
+                            <div class="form-text">Where will the event be held?</div>
+                        </div>
+
+                        <!-- Maximum Participants -->
+                        <div class="mb-4">
+                            <label for="max_participants" class="form-label">Maximum Participants</label>
+                            <input type="number" class="form-control" id="max_participants" name="max_participants" 
+                                   value="100" min="1" max="1000">
+                            <div class="form-text">How many people can attend this event?</div>
+                        </div>
+
+                        <!-- Important Notice -->
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
+                            <strong>Note:</strong> Your event will need admin approval before it becomes visible to students. 
+                            You'll be notified once it's approved.
+                        </div>
+
+                        <!-- Submit Buttons -->
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-plus-circle"></i> Create Event
+                            </button>
+                            <a href="{{ url_for('dashboard.club_manager') }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Guidelines Card -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-lightbulb"></i> Event Guidelines</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled small">
+                        <li class="mb-2">
+                            <i class="bi bi-check text-success"></i>
+                            Use clear, descriptive titles
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-check text-success"></i>
+                            Include detailed descriptions
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-check text-success"></i>
+                            Set realistic participant limits
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-check text-success"></i>
+                            Allow sufficient registration time
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-check text-success"></i>
+                            Specify exact location details
+                        </li>
+                    </ul>
+                    
+                    <hr>
+                    
+                    <h6 class="small text-muted">Need Help?</h6>
+                    <p class="small text-muted">
+                        Contact the admin team if you need assistance with event creation or have questions about policies.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Set minimum date to current date/time
+document.addEventListener('DOMContentLoaded', function() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    
+    const minDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+    
+    document.getElementById('date_time').min = minDateTime;
+    document.getElementById('registration_deadline').min = minDateTime;
+    
+    // Auto-adjust registration deadline when event date changes
+    document.getElementById('date_time').addEventListener('change', function() {
+        const eventDate = new Date(this.value);
+        const regDeadline = document.getElementById('registration_deadline');
+        
+        // Set registration deadline to 1 day before event (or current time if event is tomorrow)
+        const deadlineDate = new Date(eventDate.getTime() - 24 * 60 * 60 * 1000);
+        if (deadlineDate < now) {
+            deadlineDate.setTime(now.getTime() + 60 * 60 * 1000); // 1 hour from now
+        }
+        
+        const deadlineYear = deadlineDate.getFullYear();
+        const deadlineMonth = String(deadlineDate.getMonth() + 1).padStart(2, '0');
+        const deadlineDay = String(deadlineDate.getDate()).padStart(2, '0');
+        const deadlineHours = String(deadlineDate.getHours()).padStart(2, '0');
+        const deadlineMinutes = String(deadlineDate.getMinutes()).padStart(2, '0');
+        
+        regDeadline.value = `${deadlineYear}-${deadlineMonth}-${deadlineDay}T${deadlineHours}:${deadlineMinutes}`;
+    });
+});
+
+// Form validation
+document.querySelector('form').addEventListener('submit', function(e) {
+    const eventDate = new Date(document.getElementById('date_time').value);
+    const regDeadline = new Date(document.getElementById('registration_deadline').value);
+    const now = new Date();
+    
+    if (eventDate <= now) {
+        e.preventDefault();
+        alert('Event date must be in the future.');
+        return;
+    }
+    
+    if (regDeadline >= eventDate) {
+        e.preventDefault();
+        alert('Registration deadline must be before the event date.');
+        return;
+    }
+    
+    if (regDeadline <= now) {
+        e.preventDefault();
+        alert('Registration deadline must be in the future.');
+        return;
+    }
+});
+</script>
+{% endblock %} 

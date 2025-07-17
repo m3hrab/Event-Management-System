@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+
+{% block title %}Student Dashboard - DUET Event Management{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold">Welcome back, {{ current_user.full_name }}!</h2>
+            <p class="text-muted">Your student dashboard</p>
+        </div>
+        <a href="{{ url_for('main.events') }}" class="btn btn-primary">
+            <i class="bi bi-search"></i> Browse All Events
+        </a>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4 mb-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="mb-0">{{ upcoming_registered|length }}</h3>
+                            <small>Upcoming Events</small>
+                        </div>
+                        <i class="bi bi-calendar-event display-6"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="mb-0">{{ past_registered|length }}</h3>
+                            <small>Events Attended</small>
+                        </div>
+                        <i class="bi bi-check-circle display-6"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="mb-0">{{ available_events|length }}</h3>
+                            <small>New Events Available</small>
+                        </div>
+                        <i class="bi bi-plus-circle display-6"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Upcoming Registered Events -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Your Upcoming Events</h5>
+                </div>
+                <div class="card-body">
+                    {% if upcoming_registered %}
+                        {% for event in upcoming_registered %}
+                            <div class="d-flex justify-content-between align-items-start mb-3 pb-3 {% if not loop.last %}border-bottom{% endif %}">
+                                <div>
+                                    <h6 class="mb-1">
+                                        <a href="{{ url_for('events.detail', event_id=event.id) }}" class="text-decoration-none">
+                                            {{ event.title }}
+                                        </a>
+                                    </h6>
+                                    <small class="text-muted">
+                                        <i class="bi bi-building"></i> {{ event.club.acronym }} | 
+                                        <i class="bi bi-calendar"></i> {{ event.date_time.strftime('%b %d, %Y') }} |
+                                        <i class="bi bi-clock"></i> {{ event.date_time.strftime('%I:%M %p') }}
+                                    </small>
+                                    <br>
+                                    <small class="text-muted">
+                                        <i class="bi bi-geo-alt"></i> {{ event.location }}
+                                    </small>
+                                </div>
+                                <span class="badge bg-success">Registered</span>
+                            </div>
+                        {% endfor %}
+                        <div class="text-center">
+                            <a href="{{ url_for('main.events') }}?status=upcoming" class="btn btn-outline-primary btn-sm">
+                                View All Upcoming Events
+                            </a>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-3">
+                            <i class="bi bi-calendar-x display-6 text-muted"></i>
+                            <p class="text-muted mt-2">No upcoming events registered</p>
+                            <a href="{{ url_for('main.events') }}" class="btn btn-primary">
+                                Browse Events
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Available Events -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Available Events</h5>
+                    <a href="{{ url_for('main.events') }}" class="btn btn-sm btn-outline-primary">
+                        View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if available_events %}
+                        {% for event in available_events %}
+                            <div class="d-flex justify-content-between align-items-start mb-3 pb-3 {% if not loop.last %}border-bottom{% endif %}">
+                                <div>
+                                    <h6 class="mb-1">
+                                        <a href="{{ url_for('events.detail', event_id=event.id) }}" class="text-decoration-none">
+                                            {{ event.title }}
+                                        </a>
+                                    </h6>
+                                    <small class="text-muted">
+                                        <i class="bi bi-building"></i> {{ event.club.acronym }} | 
+                                        <i class="bi bi-calendar"></i> {{ event.date_time.strftime('%b %d, %Y') }}
+                                    </small>
+                                    <br>
+                                    <small class="text-muted">
+                                        <i class="bi bi-people"></i> {{ event.registration_count }}/{{ event.max_participants }} registered
+                                    </small>
+                                </div>
+                                <div class="text-end">
+                                    {% if event.is_registration_open and event.seats_available > 0 %}
+                                        <span class="badge bg-success">Open</span>
+                                    {% elif event.seats_available <= 0 %}
+                                        <span class="badge bg-danger">Full</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Closed</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-3">
+                            <i class="bi bi-search display-6 text-muted"></i>
+                            <p class="text-muted mt-2">No new events available</p>
+                            <small class="text-muted">Check back later for new events</small>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Past Events -->
+    {% if past_registered %}
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Past Events Attended</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            {% for event in past_registered %}
+                                <div class="col-md-6 col-lg-4 mb-3">
+                                    <div class="card h-100">
+                                        <div class="card-body">
+                                            <h6 class="card-title">{{ event.title }}</h6>
+                                            <p class="card-text">
+                                                <small class="text-muted">
+                                                    <i class="bi bi-building"></i> {{ event.club.acronym }}<br>
+                                                    <i class="bi bi-calendar"></i> {{ event.date_time.strftime('%b %d, %Y') }}
+                                                </small>
+                                            </p>
+                                            <a href="{{ url_for('events.detail', event_id=event.id) }}" class="btn btn-outline-primary btn-sm">
+                                                View Details
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %} 

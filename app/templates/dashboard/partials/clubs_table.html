@@ -1,0 +1,178 @@
+{% if clubs %}
+<div class="table-responsive">
+    <table class="table table-hover mb-0">
+        <thead class="table-light">
+            <tr>
+                <th>Club</th>
+                <th>Manager</th>
+                <th>Events</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th class="text-center">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for club in clubs %}
+                <tr id="club-{{ club.id }}">
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <div class="me-3">
+                                {% if club.logo_url %}
+                                    <img src="{{ club.logo_url }}" alt="{{ club.acronym }}" 
+                                         class="rounded" style="width: 40px; height: 40px; object-fit: cover;">
+                                {% else %}
+                                    <div class="bg-primary text-white rounded d-flex align-items-center justify-content-center" 
+                                         style="width: 40px; height: 40px; font-size: 14px; font-weight: bold;">
+                                        {{ club.acronym[:2] }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <h6 class="mb-1">
+                                    <a href="{{ url_for('clubs.detail', club_id=club.id) }}" 
+                                       class="text-decoration-none text-primary">
+                                        {{ club.name }}
+                                    </a>
+                                </h6>
+                                <small class="text-muted">{{ club.acronym }}</small>
+                                {% if club.description %}
+                                    <br><small class="text-muted">
+                                        {{ club.description[:50] }}{% if club.description|length > 50 %}...{% endif %}
+                                    </small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        {% set manager = club.get_manager() %}
+                        {% if manager %}
+                            <div>
+                                <span class="fw-medium">{{ manager.full_name }}</span>
+                                <br><small class="text-muted">{{ manager.email }}</small>
+                            </div>
+                        {% else %}
+                            <span class="text-muted">
+                                <i class="fas fa-user-slash me-1"></i>No manager
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="d-flex flex-column">
+                            <span class="fw-medium">{{ club.events.count() }} total</span>
+                            <small class="text-muted">
+                                {{ club.events.filter_by(is_active=True).count() }} active
+                            </small>
+                        </div>
+                    </td>
+                    <td>
+                        {% if club.is_active %}
+                            <span class="badge bg-success">
+                                <i class="fas fa-check me-1"></i>Active
+                            </span>
+                        {% else %}
+                            <span class="badge bg-secondary">
+                                <i class="fas fa-times me-1"></i>Inactive
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="text-muted">{{ club.created_at.strftime('%b %d, %Y') }}</span>
+                    </td>
+                    <td class="text-center">
+                        <div class="btn-group" role="group">
+                            <!-- View Details -->
+                            <a href="{{ url_for('clubs.detail', club_id=club.id) }}" 
+                               class="btn btn-outline-primary btn-sm" title="View Details">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            
+                            <!-- Edit Club -->
+                            <a href="{{ url_for('clubs.edit', club_id=club.id) }}" 
+                               class="btn btn-outline-warning btn-sm" title="Edit Club">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            
+                            <!-- Manage Club -->
+                            <a href="{{ url_for('clubs.manage', club_id=club.id) }}" 
+                               class="btn btn-outline-info btn-sm" title="Manage Club">
+                                <i class="fas fa-users-cog"></i>
+                            </a>
+                            
+                            <!-- Dropdown for more actions -->
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle" 
+                                        data-bs-toggle="dropdown" title="More Actions">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li>
+                                        <h6 class="dropdown-header">Club Actions</h6>
+                                    </li>
+                                    <li>
+                                        <button class="dropdown-item" 
+                                                onclick="toggleClubStatus({{ club.id }}, {{ club.is_active|lower }})">
+                                            {% if club.is_active %}
+                                                <i class="fas fa-ban text-warning me-2"></i>Deactivate Club
+                                            {% else %}
+                                                <i class="fas fa-check text-success me-2"></i>Activate Club
+                                            {% endif %}
+                                        </button>
+                                    </li>
+                                    {% if manager %}
+                                        <li>
+                                            <button class="dropdown-item text-warning" 
+                                                    onclick="removeManager({{ club.id }})">
+                                                <i class="fas fa-user-minus me-2"></i>Remove Manager
+                                            </button>
+                                        </li>
+                                    {% endif %}
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <button class="dropdown-item text-danger" 
+                                                onclick="deleteClub({{ club.id }})"
+                                                {% if club.events.filter_by(is_active=True).count() > 0 %}
+                                                    disabled title="Cannot delete club with active events"
+                                                {% endif %}>
+                                            <i class="fas fa-trash me-2"></i>Delete Club
+                                        </button>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Pagination would go here if needed -->
+<div class="card-footer bg-light">
+    <div class="d-flex justify-content-between align-items-center">
+        <small class="text-muted">
+            Showing {{ clubs|length }} club{{ 's' if clubs|length != 1 else '' }}
+        </small>
+        <div>
+            <!-- Pagination controls would go here -->
+        </div>
+    </div>
+</div>
+
+{% else %}
+<div class="text-center py-5">
+    <i class="fas fa-building fa-3x text-muted mb-3"></i>
+    <h5 class="text-muted">No clubs found</h5>
+    <p class="text-muted">
+        {% if search or status_filter != 'active' %}
+            Try adjusting your search criteria or filters.
+        {% else %}
+            No clubs have been created yet.
+        {% endif %}
+    </p>
+    {% if not search and status_filter == 'active' %}
+        <a href="{{ url_for('clubs.create') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-1"></i>Create First Club
+        </a>
+    {% endif %}
+</div>
+{% endif %} 
