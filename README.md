@@ -244,24 +244,79 @@ The app automatically creates tables on first run. For schema changes:
 The application is configured for immediate local development with SQLite.
 
 ### Production Deployment
-For production deployment:
-1. Use PostgreSQL or MySQL database
-2. Set environment variables for configuration
-3. Use a production WSGI server like Gunicorn
-4. Configure reverse proxy (Nginx)
-5. Set up SSL certificates
-6. Configure email service for notifications
 
-### Docker Deployment (Optional)
-```dockerfile
-FROM python:3.9-slim
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-COPY . .
-EXPOSE 5000
-CMD ["python", "run.py"]
+This application is production-ready with comprehensive deployment configurations.
+
+#### Quick Production Setup
+
+```bash
+# Clone the repository
+git clone <repository-url>
+cd Event-Management-System
+
+# Run the automated deployment script
+sudo ./deploy.sh
 ```
+
+#### Production Features
+
+- **Environment-based configuration** with development, testing, and production configs
+- **Docker support** with multi-stage builds and optimized containers
+- **Nginx configuration** with SSL, security headers, and performance optimization
+- **Systemd service** for reliable application management
+- **Comprehensive monitoring** with health checks and automated alerts
+- **Security hardening** with fail2ban, firewall configuration, and security headers
+- **Automated backups** with rotation and retention policies
+- **Production logging** with log rotation and centralized monitoring
+
+#### Deployment Options
+
+1. **Traditional Server Deployment**: Full server setup with nginx, gunicorn, and systemd
+2. **Docker Deployment**: Containerized deployment with Docker Compose
+3. **Cloud Deployment**: Ready for AWS, GCP, Azure, and other cloud platforms
+
+#### Production Documentation
+
+- [Complete Deployment Guide](DEPLOYMENT.md) - Step-by-step production deployment
+- [Production Checklist](PRODUCTION_CHECKLIST.md) - Pre and post-deployment verification
+- [Security Setup](security-setup.sh) - Automated security hardening
+- [Monitoring Scripts](monitor.sh) - Health monitoring and alerting
+
+#### Environment Configuration
+
+The application supports multiple environments through configuration classes:
+
+- **Development**: Debug enabled, SQLite database, relaxed security
+- **Production**: Debug disabled, PostgreSQL/MySQL support, enhanced security
+- **Testing**: In-memory database, optimized for testing
+
+#### Security Features (Production)
+
+- SSL/TLS encryption with automatic certificate management
+- Security headers (HSTS, CSP, X-Frame-Options, etc.)
+- Rate limiting and DDoS protection
+- Fail2ban integration for intrusion prevention
+- Automated security updates
+- Comprehensive logging and monitoring
+- Database connection pooling and optimization
+
+#### Performance Optimizations
+
+- **Gunicorn WSGI server** with configurable worker processes
+- **Nginx reverse proxy** with caching and compression
+- **Static file optimization** with proper caching headers
+- **Database connection pooling** for improved performance
+- **Log rotation** to prevent disk space issues
+
+#### Monitoring and Maintenance
+
+- **Health check endpoint** (`/health`) for load balancer integration
+- **Automated monitoring scripts** for system health
+- **Log aggregation** and error tracking
+- **Backup automation** with configurable retention
+- **Performance metrics** and alerting
+
+---
 
 ## Contributing
 
@@ -284,4 +339,4 @@ For support and questions:
 
 ---
 
-**Built with ❤️ for DUET Community** 
+**Built with ❤️ for DUET Community**

@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=production
+      - DATABASE_URL=postgresql://duet_user:duet_password@db:5432/duet_events
+      - SECRET_KEY=your-production-secret-key-here
+    depends_on:
+      - db
+    volumes:
+      - ./instance/uploads:/app/instance/uploads
+      - ./logs:/app/logs
+    restart: unless-stopped
+
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=duet_events
+      - POSTGRES_USER=duet_user
+      - POSTGRES_PASSWORD=duet_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl
+    depends_on:
+      - web
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

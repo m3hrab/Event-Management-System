@@ -1,6 +1,7 @@
-from flask import Blueprint, render_template, request
+from flask import Blueprint, render_template, request, jsonify
 from datetime import datetime
 from app.models import Event, Club
+from app import db
 from sqlalchemy import desc
 
 bp = Blueprint('main', __name__)
@@ -8,6 +9,24 @@ bp = Blueprint('main', __name__)
 def is_htmx_request():
     """Check if the request is from HTMX"""
     return request.headers.get('HX-Request') == 'true'
+
+@bp.route('/health')
+def health_check():
+    """Health check endpoint for monitoring"""
+    try:
+        # Test database connection
+        db.session.execute('SELECT 1')
+        return jsonify({
+            'status': 'healthy',
+            'timestamp': datetime.utcnow().isoformat(),
+            'database': 'connected'
+        }), 200
+    except Exception as e:
+        return jsonify({
+            'status': 'unhealthy',
+            'timestamp': datetime.utcnow().isoformat(),
+            'error': str(e)
+        }), 500
 
 @bp.route('/')
 def index():
@@ -104,4 +123,4 @@ def events():
                          clubs=clubs,
                          search=search,
                          club_filter=club_filter,
-                         status_filter=status_filter) 
+                         status_filter=status_filter)

@@ -1,15 +1,20 @@
 import os
+import logging
+from logging.handlers import RotatingFileHandler
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
-from config import Config
+from config import config
 
 db = SQLAlchemy()
 login_manager = LoginManager()
 
-def create_app(config_class=Config):
+def create_app(config_name=None):
+    if config_name is None:
+        config_name = os.environ.get('FLASK_ENV', 'development')
+    
     app = Flask(__name__)
-    app.config.from_object(config_class)
+    app.config.from_object(config[config_name])
     
     # Initialize extensions
     db.init_app(app)
@@ -17,6 +22,20 @@ def create_app(config_class=Config):
     login_manager.login_view = 'auth.login'
     login_manager.login_message = 'Please log in to access this page.'
     login_manager.login_message_category = 'info'
+    
+    # Setup logging for production
+    if not app.debug and not app.testing:
+        if not os.path.exists('logs'):
+            os.mkdir('logs')
+        file_handler = RotatingFileHandler('logs/duet_events.log', maxBytes=10240000, backupCount=10)
+        file_handler.setFormatter(logging.Formatter(
+            '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+        ))
+        file_handler.setLevel(logging.INFO)
+        app.logger.addHandler(file_handler)
+        
+        app.logger.setLevel(logging.INFO)
+        app.logger.info('DUET Events startup')
     
     # Create upload directory
     upload_dir = os.path.join(app.instance_path, 'uploads')
