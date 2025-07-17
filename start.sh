@@ -11,21 +11,19 @@ if ! command -v gunicorn &> /dev/null; then
     pip install gunicorn==21.2.0
 fi
 
-# Create necessary directories
+# Create necessary directories in current working directory
+echo "Creating directories..."
 mkdir -p instance/uploads
 mkdir -p logs
 
-# Initialize database if needed
-python -c "
-from app import create_app, db
-import os
-os.environ.setdefault('FLASK_ENV', 'production')
-app = create_app()
-with app.app_context():
-    db.create_all()
-    print('Database initialized')
-"
+# Set proper permissions
+chmod 755 instance 2>/dev/null || true
+chmod 755 instance/uploads 2>/dev/null || true
 
-# Start the application
+echo "Current working directory: $(pwd)"
+echo "Directory contents:"
+ls -la
+
+# Start the application - let Flask handle database creation
 echo "Starting gunicorn server..."
-exec gunicorn --bind 0.0.0.0:$PORT --workers 1 --timeout 120 run:app
+exec gunicorn --bind 0.0.0.0:$PORT --workers 1 --timeout 120 --preload run:app

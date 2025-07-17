@@ -49,8 +49,13 @@ class ProductionConfig(Config):
     TESTING = False
     SESSION_COOKIE_SECURE = True
     
-    # Production database (consider PostgreSQL)
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///duet_events.db'
+    # Production database - use a path that works on Render
+    if os.environ.get('DATABASE_URL'):
+        SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
+    else:
+        # Fallback to a writable location on Render
+        db_path = os.path.join(os.getcwd(), 'duet_events.db')
+        SQLALCHEMY_DATABASE_URI = f'sqlite:///{db_path}'
     
     # Enhanced security for production
     WTF_CSRF_TIME_LIMIT = 3600  # 1 hour

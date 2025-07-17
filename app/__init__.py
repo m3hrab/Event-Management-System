@@ -71,36 +71,49 @@ def create_app(config_name=None):
     
     # Create database tables
     with app.app_context():
-        db.create_all()
-        
-        # Create default admin user and clubs if they don't exist
-        from app.models import User, Club
-        
-        # Create admin user
-        admin = User.query.filter_by(email='admin@duet.ac.bd').first()
-        if not admin:
-            admin = User(
-                username='admin',
-                email='admin@duet.ac.bd',
-                full_name='DUET Admin',
-                role='admin'
-            )
-            admin.set_password('admin123')
-            db.session.add(admin)
-        
-        # Create default clubs
-        clubs_data = [
-            {'name': 'DUET Computer Society', 'acronym': 'DUETCS', 'description': 'The premier technology and programming club of DUET'},
-            {'name': 'DUET Robotics Club', 'acronym': 'DRC', 'description': 'Advancing robotics and automation at DUET'},
-            {'name': 'DUET English Language Club', 'acronym': 'DELC', 'description': 'Promoting English language and literature at DUET'}
-        ]
-        
-        for club_data in clubs_data:
-            existing_club = Club.query.filter_by(acronym=club_data['acronym']).first()
-            if not existing_club:
-                club = Club(**club_data)
-                db.session.add(club)
-        
-        db.session.commit()
+        try:
+            # Ensure the database directory exists
+            db_url = app.config['SQLALCHEMY_DATABASE_URI']
+            if db_url.startswith('sqlite:///'):
+                db_path = db_url.replace('sqlite:///', '')
+                db_dir = os.path.dirname(db_path)
+                if db_dir and not os.path.exists(db_dir):
+                    os.makedirs(db_dir, exist_ok=True)
+            
+            db.create_all()
+            
+            # Create default admin user and clubs if they don't exist
+            from app.models import User, Club
+            
+            # Create admin user
+            admin = User.query.filter_by(email='admin@duet.ac.bd').first()
+            if not admin:
+                admin = User(
+                    username='admin',
+                    email='admin@duet.ac.bd',
+                    full_name='DUET Admin',
+                    role='admin'
+                )
+                admin.set_password('admin123')
+                db.session.add(admin)
+            
+            # Create default clubs
+            clubs_data = [
+                {'name': 'DUET Computer Society', 'acronym': 'DUETCS', 'description': 'The premier technology and programming club of DUET'},
+                {'name': 'DUET Robotics Club', 'acronym': 'DRC', 'description': 'Advancing robotics and automation at DUET'},
+                {'name': 'DUET English Language Club', 'acronym': 'DELC', 'description': 'Promoting English language and literature at DUET'}
+            ]
+            
+            for club_data in clubs_data:
+                existing_club = Club.query.filter_by(acronym=club_data['acronym']).first()
+                if not existing_club:
+                    club = Club(**club_data)
+                    db.session.add(club)
+            
+            db.session.commit()
+            
+        except Exception as e:
+            app.logger.error(f"Database initialization error: {e}")
+            # Don't fail the app startup, just log the error
     
     return app 

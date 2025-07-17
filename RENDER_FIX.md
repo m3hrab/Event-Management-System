@@ -47,7 +47,7 @@ bash start.sh
 |----------|-------|
 | `FLASK_ENV` | `production` |
 | `SECRET_KEY` | `^PzTID\TW|\9{D?g}W"*XYlc%dd&#>iC` |
-| `DATABASE_URL` | `sqlite:///instance/duet_events.db` |
+| `DATABASE_URL` | `sqlite:///duet_events.db` |
 | `SESSION_COOKIE_SECURE` | `True` |
 | `ADMIN_EMAIL` | `admin@duet.ac.bd` |
 | `ADMIN_PASSWORD` | `YourSecurePassword123!` |
