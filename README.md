@@ -4,7 +4,7 @@ A production-ready Flask application for managing university club events: create
 
 ## Live Demo
 
-- Deployed on Render: `https://your-render-service-url`  
+- Deployed on Render: `https://duet-ems.onrender.com/`  
   Use the demo credentials below to explore.
 
 ## Demo Credentials
